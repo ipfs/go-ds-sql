@@ -1,6 +1,6 @@
 # SQL Datastore
 
-An implementation of [the datastore interface](https://github.com/jbenet/go-datastore)
+An implementation of [the datastore interface](https://github.com/ipfs/go-datastore)
 that can be backed by any sql database.
 
 ## Usage
