@@ -1,10 +1,10 @@
 package postgres
 
 import (
+	"database/sql"
 	"fmt"
 
-	"database/sql"
-	_ "github.com/lib/pq" //postgres driver
+	_ "gx/lib/QmfJhaxwzBCorUmZNRmY87z4mD6roRrHFMqddhiS4D4XWr/pq" //postgres driver
 
 	"github.com/whyrusleeping/sql-datastore"
 )
@@ -41,15 +41,19 @@ func (Queries) Query() string {
 }
 
 func (Queries) Prefix() string {
-	return " WHERE key LIKE '%s%%' ORDER BY key"
+	return ` WHERE key LIKE '%s%%' ORDER BY key`
 }
 
 func (Queries) Limit() string {
-	return " LIMIT %d"
+	return ` LIMIT %d`
 }
 
 func (Queries) Offset() string {
-	return " OFFSET %d"
+	return ` OFFSET %d`
+}
+
+func (Queries) GetSize() string {
+	return `SELECT octet_length(data) FROM blocks WHERE key = $1`
 }
 
 // Create returns a datastore connected to postgres

@@ -1,14 +1,13 @@
 package sqlds
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 
-	"database/sql"
-
-	ds "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore"
-	dsq "gx/ipfs/QmVG5gxteQNEMhrS8prJSmU2C9rebtFuTd3SYZ5kE3YZ5k/go-datastore/query"
+	ds "gx/ipfs/Qmf4xQhNomPNhrtZc67qSnfJSjxjXs9LWvknJtSXwimPrM/go-datastore" // 3.4.1
+	dsq "gx/ipfs/Qmf4xQhNomPNhrtZc67qSnfJSjxjXs9LWvknJtSXwimPrM/go-datastore/query"
 )
 
 type Queries interface {
@@ -20,6 +19,7 @@ type Queries interface {
 	Prefix() string
 	Limit() string
 	Offset() string
+	GetSize() string
 }
 
 type Datastore struct {
@@ -57,6 +57,10 @@ func (b *batch) GetTransaction() (*sql.Tx, error) {
 }
 
 func (b *batch) Put(key ds.Key, val []byte) error {
+	if val == nil {
+		return ds.ErrInvalidType
+	}
+
 	txn, err := b.GetTransaction()
 	if err != nil {
 		b.txn.Rollback()
@@ -72,7 +76,7 @@ func (b *batch) Put(key ds.Key, val []byte) error {
 	return nil
 }
 
-func (b batch) Delete(key ds.Key) error {
+func (b *batch) Delete(key ds.Key) error {
 	txn, err := b.GetTransaction()
 	if err != nil {
 		b.txn.Rollback()
@@ -91,7 +95,6 @@ func (b *batch) Commit() error {
 	if b.txn == nil {
 		return errors.New("no transaction started, cannot commit")
 	}
-
 	var err = b.txn.Commit()
 	if err != nil {
 		b.txn.Rollback()
@@ -161,6 +164,10 @@ func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 }
 
 func (d *Datastore) Put(key ds.Key, value []byte) error {
+	if value == nil {
+		return ds.ErrInvalidType
+	}
+
 	_, err := d.db.Exec(d.queries.Put(), key.String(), value)
 	if err != nil {
 		return err
@@ -222,6 +229,20 @@ func (d *Datastore) RawQuery(q dsq.Query) (dsq.Results, error) {
 
 	results := dsq.ResultsWithEntries(q, entries)
 	return results, nil
+}
+
+func (d *Datastore) GetSize(key ds.Key) (int, error) {
+	row := d.db.QueryRow(d.queries.GetSize(), key.String())
+	var size int
+
+	switch err := row.Scan(&size); err {
+	case sql.ErrNoRows:
+		return 0, ds.ErrNotFound
+	case nil:
+		return size, nil
+	default:
+		return 0, err
+	}
 }
 
 // QueryWithParams applies prefix, limit, and offset params in pg query
