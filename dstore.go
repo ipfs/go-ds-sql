@@ -8,6 +8,7 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 )
 
+// Queries generates SQL queries for datastore operations.
 type Queries interface {
 	Delete() string
 	Exists() string
@@ -20,116 +21,33 @@ type Queries interface {
 	GetSize() string
 }
 
+// Datastore is a SQL backed datastore.
 type Datastore struct {
 	db      *sql.DB
 	queries Queries
 }
 
-// NewDatastore returns a new datastore
+// NewDatastore returns a new SQL datastore.
 func NewDatastore(db *sql.DB, queries Queries) *Datastore {
 	return &Datastore{db: db, queries: queries}
 }
 
-type batch struct {
-	db      *sql.DB
-	queries Queries
-	txn     *sql.Tx
-}
-
-func (b *batch) GetTransaction() (*sql.Tx, error) {
-	if b.txn != nil {
-		return b.txn, nil
-	}
-
-	newTransaction, err := b.db.Begin()
-	if err != nil {
-		if newTransaction != nil {
-			// nothing we can do about this error.
-			_ = newTransaction.Rollback()
-		}
-
-		return nil, err
-	}
-
-	b.txn = newTransaction
-	return newTransaction, nil
-}
-
-func (b *batch) Put(key ds.Key, val []byte) error {
-	txn, err := b.GetTransaction()
-	if err != nil {
-		return err
-	}
-
-	_, err = txn.Exec(b.queries.Put(), key.String(), val)
-	if err != nil {
-		_ = b.txn.Rollback()
-		return err
-	}
-
-	return nil
-}
-
-func (b *batch) Delete(key ds.Key) error {
-	txn, err := b.GetTransaction()
-	if err != nil {
-		return err
-	}
-
-	_, err = txn.Exec(b.queries.Delete(), key.String())
-	if err != nil {
-		_ = b.txn.Rollback()
-		return err
-	}
-
-	return err
-}
-
-func (b *batch) Commit() error {
-	if b.txn == nil {
-		return nil // no Put or Delete calls were made, nothing to do
-	}
-	err := b.txn.Commit()
-	if err != nil {
-		_ = b.txn.Rollback()
-		return err
-	}
-
-	return nil
-}
-
-func (d *Datastore) Batch() (ds.Batch, error) {
-	batch := &batch{
-		db:      d.db,
-		queries: d.queries,
-		txn:     nil,
-	}
-
-	return batch, nil
-}
-
+// Close closes the underying SQL database.
 func (d *Datastore) Close() error {
 	return d.db.Close()
 }
 
+// Delete removes a row from the SQL database by the given key.
 func (d *Datastore) Delete(key ds.Key) error {
-	result, err := d.db.Exec(d.queries.Delete(), key.String())
+	_, err := d.db.Exec(d.queries.Delete(), key.String())
 	if err != nil {
 		return err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return ds.ErrNotFound
 	}
 
 	return nil
 }
 
+// Get retrieves a value from the SQL database by the given key.
 func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	row := d.db.QueryRow(d.queries.Get(), key.String())
 	var out []byte
@@ -144,6 +62,7 @@ func (d *Datastore) Get(key ds.Key) (value []byte, err error) {
 	}
 }
 
+// Has determines if a value for the given key exists in the SQL database.
 func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	row := d.db.QueryRow(d.queries.Exists(), key.String())
 
@@ -157,6 +76,7 @@ func (d *Datastore) Has(key ds.Key) (exists bool, err error) {
 	}
 }
 
+// Put "upserts" a row into the SQL database.
 func (d *Datastore) Put(key ds.Key, value []byte) error {
 	_, err := d.db.Exec(d.queries.Put(), key.String(), value)
 	if err != nil {
@@ -166,8 +86,9 @@ func (d *Datastore) Put(key ds.Key, value []byte) error {
 	return nil
 }
 
+// Query returns multiple rows from the SQL database based on the passed query parameters.
 func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
-	raw, err := d.RawQuery(q)
+	raw, err := d.rawQuery(q)
 	if err != nil {
 		return nil, err
 	}
@@ -191,11 +112,11 @@ func (d *Datastore) Query(q dsq.Query) (dsq.Results, error) {
 	return raw, nil
 }
 
-func (d *Datastore) RawQuery(q dsq.Query) (dsq.Results, error) {
+func (d *Datastore) rawQuery(q dsq.Query) (dsq.Results, error) {
 	var rows *sql.Rows
 	var err error
 
-	rows, err = QueryWithParams(d, q)
+	rows, err = queryWithParams(d, q)
 	if err != nil {
 		return nil, err
 	}
@@ -233,10 +154,12 @@ func (d *Datastore) RawQuery(q dsq.Query) (dsq.Results, error) {
 	return dsq.ResultsFromIterator(q, it), nil
 }
 
+// Sync is noop for SQL databases.
 func (d *Datastore) Sync(key ds.Key) error {
 	return nil
 }
 
+// GetSize determines the size in bytes of the value for a given key.
 func (d *Datastore) GetSize(key ds.Key) (int, error) {
 	row := d.db.QueryRow(d.queries.GetSize(), key.String())
 	var size int
@@ -251,8 +174,8 @@ func (d *Datastore) GetSize(key ds.Key) (int, error) {
 	}
 }
 
-// QueryWithParams applies prefix, limit, and offset params in pg query
-func QueryWithParams(d *Datastore, q dsq.Query) (*sql.Rows, error) {
+// queryWithParams applies prefix, limit, and offset params in pg query
+func queryWithParams(d *Datastore, q dsq.Query) (*sql.Rows, error) {
 	var qNew = d.queries.Query()
 
 	if q.Prefix != "" {
