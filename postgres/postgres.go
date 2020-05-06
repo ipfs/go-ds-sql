@@ -11,12 +11,12 @@ import (
 
 // Options are the postgres datastore options, reexported here for convenience.
 type Options struct {
-	Host      string
-	Port      string
-	User      string
-	Password  string
-	Database  string
-	TableName string
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
+	Table    string
 }
 
 // Queries are the postgres queries for a given table.
@@ -102,7 +102,7 @@ func (opts *Options) Create() (*sqlds.Datastore, error) {
 		return nil, err
 	}
 
-	return sqlds.NewDatastore(db, NewQueries(opts.TableName)), nil
+	return sqlds.NewDatastore(db, NewQueries(opts.Table)), nil
 }
 
 func (opts *Options) setDefaults() {
@@ -122,7 +122,7 @@ func (opts *Options) setDefaults() {
 		opts.Database = "datastore"
 	}
 
-	if opts.TableName == "" {
-		opts.TableName = "blocks"
+	if opts.Table == "" {
+		opts.Table = "blocks"
 	}
 }
