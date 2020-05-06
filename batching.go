@@ -1,6 +1,8 @@
 package sqlds
 
 import (
+	"context"
+
 	ds "github.com/ipfs/go-datastore"
 )
 
@@ -17,7 +19,7 @@ type batch struct {
 // Batch creates a set of deferred updates to the database.
 // Since SQL does not support a true batch of updates,
 // operations are buffered and then executed sequentially
-// when Commit is called.
+// over a single connection when Commit is called.
 func (d *Datastore) Batch() (ds.Batch, error) {
 	return &batch{
 		ds:  d,
@@ -36,12 +38,21 @@ func (bt *batch) Delete(key ds.Key) error {
 }
 
 func (bt *batch) Commit() error {
-	var err error
+	return bt.CommitContext(context.Background())
+}
+
+func (bt *batch) CommitContext(ctx context.Context) error {
+	conn, err := bt.ds.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
 	for k, op := range bt.ops {
 		if op.delete {
-			err = bt.ds.Delete(k)
+			_, err = conn.ExecContext(ctx, bt.ds.queries.Delete(), k.String())
 		} else {
-			err = bt.ds.Put(k, op.value)
+			_, err = conn.ExecContext(ctx, bt.ds.queries.Put(), k.String(), op.value)
 		}
 		if err != nil {
 			break
