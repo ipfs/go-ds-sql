@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	datastore "github.com/ipfs/go-datastore"
-	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 )
 
@@ -37,13 +36,13 @@ func (ds *Datastore) NewTransaction(_ bool) (datastore.Txn, error) {
 	}, nil
 }
 
-func (t *txn) Get(key ds.Key) ([]byte, error) {
+func (t *txn) Get(key datastore.Key) ([]byte, error) {
 	row := t.txn.QueryRow(t.queries.Get(), key.String())
 	var out []byte
 
 	switch err := row.Scan(&out); err {
 	case sql.ErrNoRows:
-		return nil, ds.ErrNotFound
+		return nil, datastore.ErrNotFound
 	case nil:
 		return out, nil
 	default:
@@ -51,7 +50,7 @@ func (t *txn) Get(key ds.Key) ([]byte, error) {
 	}
 }
 
-func (t *txn) Has(key ds.Key) (bool, error) {
+func (t *txn) Has(key datastore.Key) (bool, error) {
 	row := t.txn.QueryRow(t.queries.Exists(), key.String())
 	var exists bool
 
@@ -65,13 +64,13 @@ func (t *txn) Has(key ds.Key) (bool, error) {
 	}
 }
 
-func (t *txn) GetSize(key ds.Key) (int, error) {
+func (t *txn) GetSize(key datastore.Key) (int, error) {
 	row := t.txn.QueryRow(t.queries.GetSize(), key.String())
 	var size int
 
 	switch err := row.Scan(&size); err {
 	case sql.ErrNoRows:
-		return -1, ds.ErrNotFound
+		return -1, datastore.ErrNotFound
 	case nil:
 		return size, nil
 	default:
@@ -84,7 +83,7 @@ func (t *txn) Query(q dsq.Query) (dsq.Results, error) {
 }
 
 // Put adds a value to the datastore identified by the given key.
-func (t *txn) Put(key ds.Key, val []byte) error {
+func (t *txn) Put(key datastore.Key, val []byte) error {
 	_, err := t.txn.Exec(t.queries.Put(), key.String(), val)
 	if err != nil {
 		_ = t.txn.Rollback()
@@ -94,7 +93,7 @@ func (t *txn) Put(key ds.Key, val []byte) error {
 }
 
 // Delete removes a value from the datastore that matches the given key.
-func (t *txn) Delete(key ds.Key) error {
+func (t *txn) Delete(key datastore.Key) error {
 	_, err := t.txn.Exec(t.queries.Delete(), key.String())
 	if err != nil {
 		_ = t.txn.Rollback()
@@ -119,4 +118,4 @@ func (t *txn) Discard() {
 	_ = t.txn.Rollback()
 }
 
-var _ ds.TxnDatastore = (*Datastore)(nil)
+var _ datastore.TxnDatastore = (*Datastore)(nil)
