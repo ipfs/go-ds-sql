@@ -1,6 +1,7 @@
 package sqlds
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -18,7 +19,7 @@ type txn struct {
 }
 
 // NewTransaction creates a new database transaction, note the readOnly parameter is ignored by this implementation.
-func (ds *Datastore) NewTransaction(_ bool) (datastore.Txn, error) {
+func (ds *Datastore) NewTransaction(ctx context.Context, _ bool) (datastore.Txn, error) {
 	sqlTxn, err := ds.db.Begin()
 	if err != nil {
 		if sqlTxn != nil {
@@ -36,7 +37,7 @@ func (ds *Datastore) NewTransaction(_ bool) (datastore.Txn, error) {
 	}, nil
 }
 
-func (t *txn) Get(key datastore.Key) ([]byte, error) {
+func (t *txn) Get(ctx context.Context, key datastore.Key) ([]byte, error) {
 	row := t.txn.QueryRow(t.queries.Get(), key.String())
 	var out []byte
 
@@ -50,7 +51,7 @@ func (t *txn) Get(key datastore.Key) ([]byte, error) {
 	}
 }
 
-func (t *txn) Has(key datastore.Key) (bool, error) {
+func (t *txn) Has(ctx context.Context, key datastore.Key) (bool, error) {
 	row := t.txn.QueryRow(t.queries.Exists(), key.String())
 	var exists bool
 
@@ -64,7 +65,7 @@ func (t *txn) Has(key datastore.Key) (bool, error) {
 	}
 }
 
-func (t *txn) GetSize(key datastore.Key) (int, error) {
+func (t *txn) GetSize(ctx context.Context, key datastore.Key) (int, error) {
 	row := t.txn.QueryRow(t.queries.GetSize(), key.String())
 	var size int
 
@@ -78,12 +79,12 @@ func (t *txn) GetSize(key datastore.Key) (int, error) {
 	}
 }
 
-func (t *txn) Query(q dsq.Query) (dsq.Results, error) {
+func (t *txn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
 	return nil, ErrNotImplemented
 }
 
 // Put adds a value to the datastore identified by the given key.
-func (t *txn) Put(key datastore.Key, val []byte) error {
+func (t *txn) Put(ctx context.Context, key datastore.Key, val []byte) error {
 	_, err := t.txn.Exec(t.queries.Put(), key.String(), val)
 	if err != nil {
 		_ = t.txn.Rollback()
@@ -93,7 +94,7 @@ func (t *txn) Put(key datastore.Key, val []byte) error {
 }
 
 // Delete removes a value from the datastore that matches the given key.
-func (t *txn) Delete(key datastore.Key) error {
+func (t *txn) Delete(ctx context.Context, key datastore.Key) error {
 	_, err := t.txn.Exec(t.queries.Delete(), key.String())
 	if err != nil {
 		_ = t.txn.Rollback()
@@ -103,7 +104,7 @@ func (t *txn) Delete(key datastore.Key) error {
 }
 
 // Commit finalizes a transaction.
-func (t *txn) Commit() error {
+func (t *txn) Commit(ctx context.Context) error {
 	err := t.txn.Commit()
 	if err != nil {
 		_ = t.txn.Rollback()
@@ -114,7 +115,7 @@ func (t *txn) Commit() error {
 
 // Discard throws away changes recorded in a transaction without committing
 // them to the underlying Datastore.
-func (t *txn) Discard() {
+func (t *txn) Discard(ctx context.Context) {
 	_ = t.txn.Rollback()
 }
 

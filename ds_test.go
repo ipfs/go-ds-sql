@@ -2,6 +2,7 @@ package sqlds
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"fmt"
@@ -118,17 +119,18 @@ func newDS(t *testing.T) (*Datastore, func()) {
 	}
 }
 
-func addTestCases(t *testing.T, d *Datastore, testcases map[string]string) {
+func addTestCases(t *testing.T, ctx context.Context, d *Datastore, testcases map[string]string) {
+
 	for k, v := range testcases {
 		dsk := ds.NewKey(k)
-		if err := d.Put(dsk, []byte(v)); err != nil {
+		if err := d.Put(ctx, dsk, []byte(v)); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	for k, v := range testcases {
 		dsk := ds.NewKey(k)
-		v2, err := d.Get(dsk)
+		v2, err := d.Get(ctx, dsk)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -143,10 +145,13 @@ func TestQuery(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	addTestCases(t, d, testcases)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	addTestCases(t, ctx, d, testcases)
 
 	// test prefix
-	rs, err := d.Query(dsq.Query{Prefix: "/a/"})
+	rs, err := d.Query(ctx, dsq.Query{Prefix: "/a/"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +164,7 @@ func TestQuery(t *testing.T) {
 	}, rs)
 
 	// test offset and limit
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Offset: 2, Limit: 2})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Offset: 2, Limit: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +176,7 @@ func TestQuery(t *testing.T) {
 	// test orders
 	orbk := dsq.OrderByKey{}
 	orderByKey := []dsq.Order{orbk}
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Orders: orderByKey})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Orders: orderByKey})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +190,7 @@ func TestQuery(t *testing.T) {
 
 	orbkd := dsq.OrderByKeyDescending{}
 	orderByDesc := []dsq.Order{orbkd}
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Orders: orderByDesc})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Orders: orderByDesc})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +205,7 @@ func TestQuery(t *testing.T) {
 	// test filters
 	equalFilter := dsq.FilterKeyCompare{Op: dsq.Equal, Key: "/a/b"}
 	equalFilters := []dsq.Filter{equalFilter}
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Filters: equalFilters})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Filters: equalFilters})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +213,7 @@ func TestQuery(t *testing.T) {
 
 	greaterThanFilter := dsq.FilterKeyCompare{Op: dsq.GreaterThan, Key: "/a/b"}
 	greaterThanFilters := []dsq.Filter{greaterThanFilter}
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Filters: greaterThanFilters})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Filters: greaterThanFilters})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +226,7 @@ func TestQuery(t *testing.T) {
 
 	lessThanFilter := dsq.FilterKeyCompare{Op: dsq.LessThanOrEqual, Key: "/a/b/c"}
 	lessThanFilters := []dsq.Filter{lessThanFilter}
-	rs, err = d.Query(dsq.Query{Prefix: "/a/", Filters: lessThanFilters})
+	rs, err = d.Query(ctx, dsq.Query{Prefix: "/a/", Filters: lessThanFilters})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,9 +239,13 @@ func TestQuery(t *testing.T) {
 func TestHas(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
-	addTestCases(t, d, testcases)
 
-	has, err := d.Has(ds.NewKey("/a/b/c"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	addTestCases(t, ctx, d, testcases)
+
+	has, err := d.Has(ctx, ds.NewKey("/a/b/c"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -245,7 +254,7 @@ func TestHas(t *testing.T) {
 		t.Error("Key should be found")
 	}
 
-	has, err = d.Has(ds.NewKey("/a/b/c/d"))
+	has, err = d.Has(ctx, ds.NewKey("/a/b/c/d"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -258,9 +267,13 @@ func TestHas(t *testing.T) {
 func TestNotExistGet(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
-	addTestCases(t, d, testcases)
 
-	has, err := d.Has(ds.NewKey("/a/b/c/d"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	addTestCases(t, ctx, d, testcases)
+
+	has, err := d.Has(ctx, ds.NewKey("/a/b/c/d"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -269,7 +282,7 @@ func TestNotExistGet(t *testing.T) {
 		t.Error("Key should not be found")
 	}
 
-	val, err := d.Get(ds.NewKey("/a/b/c/d"))
+	val, err := d.Get(ctx, ds.NewKey("/a/b/c/d"))
 	if val != nil {
 		t.Error("Key should not be found")
 	}
@@ -285,9 +298,13 @@ func TestNotExistGet(t *testing.T) {
 func TestDelete(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
-	addTestCases(t, d, testcases)
 
-	has, err := d.Has(ds.NewKey("/a/b/c"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	addTestCases(t, ctx, d, testcases)
+
+	has, err := d.Has(ctx, ds.NewKey("/a/b/c"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -295,12 +312,12 @@ func TestDelete(t *testing.T) {
 		t.Error("Key should be found")
 	}
 
-	err = d.Delete(ds.NewKey("/a/b/c"))
+	err = d.Delete(ctx, ds.NewKey("/a/b/c"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	has, err = d.Has(ds.NewKey("/a/b/c"))
+	has, err = d.Has(ctx, ds.NewKey("/a/b/c"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -313,12 +330,15 @@ func TestGetEmpty(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	err := d.Put(ds.NewKey("/a"), []byte{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := d.Put(ctx, ds.NewKey("/a"), []byte{})
 	if err != nil {
 		t.Error(err)
 	}
 
-	v, err := d.Get(ds.NewKey("/a"))
+	v, err := d.Get(ctx, ds.NewKey("/a"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -332,25 +352,28 @@ func TestBatching(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	b, err := d.Batch()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	b, err := d.Batch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for k, v := range testcases {
-		err := b.Put(ds.NewKey(k), []byte(v))
+		err := b.Put(ctx, ds.NewKey(k), []byte(v))
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	err = b.Commit()
+	err = b.Commit(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for k, v := range testcases {
-		val, err := d.Get(ds.NewKey(k))
+		val, err := d.Get(ctx, ds.NewKey(k))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -361,27 +384,27 @@ func TestBatching(t *testing.T) {
 	}
 
 	//Test delete
-	b, err = d.Batch()
+	b, err = d.Batch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = b.Delete(ds.NewKey("/a/b"))
+	err = b.Delete(ctx, ds.NewKey("/a/b"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = b.Delete(ds.NewKey("/a/b/c"))
+	err = b.Delete(ctx, ds.NewKey("/a/b/c"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = b.Commit()
+	err = b.Commit(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rs, err := d.Query(dsq.Query{Prefix: "/"})
+	rs, err := d.Query(ctx, dsq.Query{Prefix: "/"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,15 +424,18 @@ func SubtestBasicPutGet(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	k := ds.NewKey("foo")
 	val := []byte("Hello Datastore!")
 
-	err := d.Put(k, val)
+	err := d.Put(ctx, k, val)
 	if err != nil {
 		t.Fatal("error putting to datastore: ", err)
 	}
 
-	have, err := d.Has(k)
+	have, err := d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has on key we just put: ", err)
 	}
@@ -418,7 +444,7 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
-	size, err := d.GetSize(k)
+	size, err := d.GetSize(ctx, k)
 	if err != nil {
 		t.Fatal("error getting size after put: ", err)
 	}
@@ -426,7 +452,7 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatalf("incorrect size: expected %d, got %d", len(val), size)
 	}
 
-	out, err := d.Get(k)
+	out, err := d.Get(ctx, k)
 	if err != nil {
 		t.Fatal("error getting value after put: ", err)
 	}
@@ -435,7 +461,7 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatal("value received on get wasnt what we expected:", out)
 	}
 
-	have, err = d.Has(k)
+	have, err = d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has after get: ", err)
 	}
@@ -444,7 +470,7 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
-	size, err = d.GetSize(k)
+	size, err = d.GetSize(ctx, k)
 	if err != nil {
 		t.Fatal("error getting size after get: ", err)
 	}
@@ -452,12 +478,12 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatalf("incorrect size: expected %d, got %d", len(val), size)
 	}
 
-	err = d.Delete(k)
+	err = d.Delete(ctx, k)
 	if err != nil {
 		t.Fatal("error calling delete: ", err)
 	}
 
-	have, err = d.Has(k)
+	have, err = d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has after delete: ", err)
 	}
@@ -466,7 +492,7 @@ func SubtestBasicPutGet(t *testing.T) {
 		t.Fatal("should not have key foo, has returned true")
 	}
 
-	size, err = d.GetSize(k)
+	size, err = d.GetSize(ctx, k)
 	switch err {
 	case ds.ErrNotFound:
 	case nil:
@@ -483,9 +509,12 @@ func TestNotFounds(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	badk := ds.NewKey("notreal")
 
-	val, err := d.Get(badk)
+	val, err := d.Get(ctx, badk)
 	if err != ds.ErrNotFound {
 		t.Fatal("expected ErrNotFound for key that doesnt exist, got: ", err)
 	}
@@ -494,7 +523,7 @@ func TestNotFounds(t *testing.T) {
 		t.Fatal("get should always return nil for not found values")
 	}
 
-	have, err := d.Has(badk)
+	have, err := d.Has(ctx, badk)
 	if err != nil {
 		t.Fatal("error calling has on not found key: ", err)
 	}
@@ -502,7 +531,7 @@ func TestNotFounds(t *testing.T) {
 		t.Fatal("has returned true for key we don't have")
 	}
 
-	size, err := d.GetSize(badk)
+	size, err := d.GetSize(ctx, badk)
 	switch err {
 	case ds.ErrNotFound:
 	case nil:
@@ -533,9 +562,12 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 		values = append(values, buf)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	t.Logf("putting %d values", count)
 	for i, k := range keys {
-		err := d.Put(k, values[i])
+		err := d.Put(ctx, k, values[i])
 		if err != nil {
 			t.Fatalf("error on put[%d]: %s", i, err)
 		}
@@ -543,7 +575,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("getting values back")
 	for i, k := range keys {
-		val, err := d.Get(k)
+		val, err := d.Get(ctx, k)
 		if err != nil {
 			t.Fatalf("error on get[%d]: %s", i, err)
 		}
@@ -555,7 +587,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("querying values")
 	q := dsq.Query{KeysOnly: true}
-	resp, err := d.Query(q)
+	resp, err := d.Query(ctx, q)
 	if err != nil {
 		t.Fatal("calling query: ", err)
 	}
@@ -590,7 +622,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("deleting all keys")
 	for _, k := range keys {
-		if err := d.Delete(k); err != nil {
+		if err := d.Delete(ctx, k); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -601,15 +633,18 @@ func TestBasicPutGet(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	k := ds.NewKey("foo")
 	val := []byte("Hello Datastore!")
 
-	err := d.Put(k, val)
+	err := d.Put(ctx, k, val)
 	if err != nil {
 		t.Fatal("error putting to datastore: ", err)
 	}
 
-	have, err := d.Has(k)
+	have, err := d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has on key we just put: ", err)
 	}
@@ -618,7 +653,7 @@ func TestBasicPutGet(t *testing.T) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
-	out, err := d.Get(k)
+	out, err := d.Get(ctx, k)
 	if err != nil {
 		t.Fatal("error getting value after put: ", err)
 	}
@@ -627,7 +662,7 @@ func TestBasicPutGet(t *testing.T) {
 		t.Fatal("value received on get wasnt what we expected:", out)
 	}
 
-	have, err = d.Has(k)
+	have, err = d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has after get: ", err)
 	}
@@ -636,12 +671,12 @@ func TestBasicPutGet(t *testing.T) {
 		t.Fatal("should have key foo, has returned false")
 	}
 
-	err = d.Delete(k)
+	err = d.Delete(ctx, k)
 	if err != nil {
 		t.Fatal("error calling delete: ", err)
 	}
 
-	have, err = d.Has(k)
+	have, err = d.Has(ctx, k)
 	if err != nil {
 		t.Fatal("error calling has after delete: ", err)
 	}
@@ -655,6 +690,9 @@ func TestBasicPutGet(t *testing.T) {
 func TestManyKeysAndQuery(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	var keys []ds.Key
 	var keystrs []string
@@ -672,7 +710,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 
 	t.Logf("putting %d values", count)
 	for i, k := range keys {
-		err := d.Put(k, values[i])
+		err := d.Put(ctx, k, values[i])
 		if err != nil {
 			t.Fatalf("error on put[%d]: %s", i, err)
 		}
@@ -680,7 +718,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("getting values back")
 	for i, k := range keys {
-		val, err := d.Get(k)
+		val, err := d.Get(ctx, k)
 		if err != nil {
 			t.Fatalf("error on get[%d]: %s", i, err)
 		}
@@ -692,7 +730,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("querying values")
 	q := dsq.Query{KeysOnly: true}
-	resp, err := d.Query(q)
+	resp, err := d.Query(ctx, q)
 	if err != nil {
 		t.Fatal("calling query: ", err)
 	}
@@ -727,7 +765,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 
 	t.Log("deleting all keys")
 	for _, k := range keys {
-		if err := d.Delete(k); err != nil {
+		if err := d.Delete(ctx, k); err != nil {
 			t.Fatal(err)
 		}
 	}
