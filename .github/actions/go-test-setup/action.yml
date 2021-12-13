@@ -1,5 +1,5 @@
-name: postgresql
-description: Start PostgreSQL
+name: postgresql-and-timeout
+description: Start PostgreSQL and increase timeout
 
 runs:
   using: "composite"
@@ -21,4 +21,6 @@ runs:
       shell: bash
     - if: ${{ runner.os == 'macOS' }}
       run: createuser -s postgres
+      shell: bash
+    - run: echo "GOFLAGS=$GOFLAGS -timeout=20m" >> $GITHUB_ENV
       shell: bash
