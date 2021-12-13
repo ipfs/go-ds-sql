@@ -22,5 +22,5 @@ runs:
     - if: ${{ runner.os == 'macOS' }}
       run: createuser -s postgres
       shell: bash
-    - run: echo "GOFLAGS=$GOFLAGS -timeout=20m" >> $GITHUB_ENV
+    - run: echo "GOFLAGS=$GOFLAGS -timeout=30m" >> $GITHUB_ENV
       shell: bash
