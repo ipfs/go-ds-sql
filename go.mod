@@ -1,6 +1,6 @@
 module github.com/ipfs/go-ds-sql
 
-go 1.19
+go 1.20
 
 require (
 	github.com/ipfs/go-datastore v0.5.1
