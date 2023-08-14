@@ -16,6 +16,8 @@ runs:
     - if: ${{ runner.os == 'macOS' }}
       run: echo "PGDATA=/usr/local/var/postgres" >> $GITHUB_ENV
       shell: bash
+    - if: ${{ runner.os == 'macOS' }}
+      run: pg_ctl -D "$PGDATA" initdb
     - if: ${{ runner.os == 'Windows' || runner.os == 'macOS' }}
       run: pg_ctl -D "$PGDATA" -l "$PGDATA/server.log" start
       shell: bash
