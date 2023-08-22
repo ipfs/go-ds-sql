@@ -18,6 +18,7 @@ runs:
       shell: bash
     - if: ${{ runner.os == 'macOS' }}
       run: pg_ctl -D "$PGDATA" initdb
+      shell: bash
     - if: ${{ runner.os == 'Windows' || runner.os == 'macOS' }}
       run: pg_ctl -D "$PGDATA" -l "$PGDATA/server.log" start
       shell: bash
