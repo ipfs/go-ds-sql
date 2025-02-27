@@ -1,16 +1,11 @@
 module github.com/ipfs/go-ds-sql
 
-go 1.21
+go 1.23
 
 require (
-	github.com/ipfs/go-datastore v0.5.1
-	github.com/lib/pq v1.3.0
-	github.com/mattn/go-sqlite3 v1.14.9
-	github.com/pkg/errors v0.9.1
+	github.com/ipfs/go-datastore v0.8.0
+	github.com/lib/pq v1.10.9
+	github.com/mattn/go-sqlite3 v1.14.24
 )
 
-require (
-	github.com/google/uuid v1.1.1 // indirect
-	github.com/ipfs/go-detect-race v0.0.1 // indirect
-	github.com/jbenet/goprocess v0.1.4 // indirect
-)
+require github.com/google/uuid v1.6.0 // indirect
