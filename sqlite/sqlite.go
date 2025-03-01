@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	sqlds "github.com/ipfs/go-ds-sql"
-	"github.com/pkg/errors"
 	// we don't import a specific driver to let the user choose
 )
 
@@ -122,12 +121,12 @@ func (opts *Options) Create() (*sqlds.Datastore, error) {
 
 	db, err := sql.Open(opts.Driver, dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open database")
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
-		return nil, errors.Wrap(err, "failed to ping database")
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	if !opts.NoCreate {
@@ -138,7 +137,7 @@ func (opts *Options) Create() (*sqlds.Datastore, error) {
 			) WITHOUT ROWID;
 		`, opts.Table)); err != nil {
 			_ = db.Close()
-			return nil, errors.Wrap(err, "failed to ensure table exists")
+			return nil, fmt.Errorf("failed to ensure table exists: %w", err)
 		}
 	}
 
