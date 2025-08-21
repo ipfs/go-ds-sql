@@ -14,7 +14,14 @@ runs:
       run: echo "$PGBIN" >> $GITHUB_PATH
       shell: bash
     - if: ${{ runner.os == 'macOS' }}
-      run: echo "PGDATA=/usr/local/var/postgres" >> $GITHUB_ENV
+      run: brew install postgresql
+      shell: bash
+    - if: ${{ runner.os == 'macOS' }}
+      run: |
+        sudo mkdir -p /usr/local/var/postgres
+        sudo chmod 775 /usr/local/var/postgres
+        sudo chown $(whoami) /usr/local/var/postgres/
+        echo "PGDATA=/usr/local/var/postgres" >> $GITHUB_ENV
       shell: bash
     - if: ${{ runner.os == 'macOS' }}
       run: pg_ctl -D "$PGDATA" initdb
