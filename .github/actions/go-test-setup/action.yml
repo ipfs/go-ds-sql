@@ -18,7 +18,7 @@ runs:
       shell: bash
     - if: ${{ runner.os == 'macOS' }}
       run: |
-        sudo mkdir /usr/local/var/postgres
+        sudo mkdir -p /usr/local/var/postgres
         sudo chmod 775 /usr/local/var/postgres
         sudo chown $(whoami) /usr/local/var/postgres/
         echo "PGDATA=/usr/local/var/postgres" >> $GITHUB_ENV
