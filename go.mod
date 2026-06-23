@@ -3,9 +3,9 @@ module github.com/ipfs/go-ds-sql
 go 1.25
 
 require (
-	github.com/ipfs/go-datastore v0.8.2
-	github.com/lib/pq v1.10.9
-	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/ipfs/go-datastore v0.9.1
+	github.com/lib/pq v1.12.3
+	github.com/mattn/go-sqlite3 v1.14.47
 )
 
 require (
