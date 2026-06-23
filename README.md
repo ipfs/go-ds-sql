@@ -1,6 +1,6 @@
 # SQL Datastore
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/ipfs/go-ds-sqp/go-test.yml?branch=master)](https://github.com/ipfs/go-ds-sql/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ipfs/go-ds-sql/go-test.yml?branch=master)](https://github.com/ipfs/go-ds-sql/actions)
 [![Coverage](https://codecov.io/gh/ipfs/go-ds-sql/branch/master/graph/badge.svg)](https://codecov.io/gh/ipfs/go-ds-sql)
 [![Standard README](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 [![GoDoc](https://pkg.go.dev/badge/github.com/ipfs/go-ds-sql)](https://pkg.go.dev/github.com/ipfs/go-ds-sql)
