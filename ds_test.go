@@ -524,7 +524,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 	var keystrs []string
 	var values [][]byte
 	count := 100
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		dsk := ds.NewKey(s)
 		keystrs = append(keystrs, dsk.String())
@@ -661,7 +661,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 	var keystrs []string
 	var values [][]byte
 	count := 100
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		dsk := ds.NewKey(s)
 		keystrs = append(keystrs, dsk.String())
