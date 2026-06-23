@@ -80,8 +80,7 @@ func TestQuery(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	addTestCases(t, d, testcases)
 
@@ -175,8 +174,7 @@ func TestHas(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	addTestCases(t, d, testcases)
 
@@ -203,8 +201,7 @@ func TestNotExistGet(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	addTestCases(t, d, testcases)
 
@@ -234,8 +231,7 @@ func TestDelete(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	addTestCases(t, d, testcases)
 
@@ -265,8 +261,7 @@ func TestGetEmpty(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	err := d.Put(ctx, ds.NewKey("/a"), []byte{})
 	if err != nil {
@@ -287,8 +282,7 @@ func TestBatching(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	b, err := d.Batch(ctx)
 	if err != nil {
@@ -446,8 +440,7 @@ func TestNotFounds(t *testing.T) {
 
 	badk := ds.NewKey("notreal")
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	val, err := d.Get(ctx, badk)
 	if err != ds.ErrNotFound {
@@ -490,7 +483,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 	var keystrs []string
 	var values [][]byte
 	count := 100
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		dsk := ds.NewKey(s)
 		keystrs = append(keystrs, dsk.String())
@@ -568,8 +561,7 @@ func TestBasicPutGet(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	k := ds.NewKey("foo")
 	val := []byte("Hello Datastore!")
@@ -626,14 +618,13 @@ func TestManyKeysAndQuery(t *testing.T) {
 	d, done := newDS(t)
 	defer done()
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	defer cancelCtx()
+	ctx := t.Context()
 
 	var keys []ds.Key
 	var keystrs []string
 	var values [][]byte
 	count := 100
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := fmt.Sprintf("%dkey%d", i, i)
 		dsk := ds.NewKey(s)
 		keystrs = append(keystrs, dsk.String())
