@@ -1,9 +1,8 @@
 # SQL Datastore
 
-[![CircleCI](https://circleci.com/gh/ipfs/go-ds-sql.svg?style=shield)](https://circleci.com/gh/ipfs/go-ds-sql)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ipfs/go-ds-sql/go-test.yml?branch=master)](https://github.com/ipfs/go-ds-sql/actions)
 [![Coverage](https://codecov.io/gh/ipfs/go-ds-sql/branch/master/graph/badge.svg)](https://codecov.io/gh/ipfs/go-ds-sql)
-[![GoDoc](http://img.shields.io/badge/godoc-reference-5272B4.svg)](https://godoc.org/github.com/ipfs/go-ds-sql)
-[![golang version](https://img.shields.io/badge/golang-%3E%3D1.14.0-orange.svg)](https://golang.org/)
+[![GoDoc](https://pkg.go.dev/badge/github.com/ipfs/go-ds-sql)](https://pkg.go.dev/github.com/ipfs/go-ds-sql)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ipfs/go-ds-sql)](https://goreportcard.com/report/github.com/ipfs/go-ds-sql)
 
 An implementation of [the datastore interface](https://github.com/ipfs/go-datastore)
@@ -118,7 +117,7 @@ func main() {
 
 ## API
 
-[GoDoc Reference](https://godoc.org/github.com/ipfs/go-ds-sql)
+[GoDoc Reference](https://pkg.go.dev/github.com/ipfs/go-ds-sql)
 
 ## Contribute
 
