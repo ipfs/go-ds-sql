@@ -95,11 +95,8 @@ func (fakeQueries) GetSize() string {
 	return `SELECT octet_length(data) FROM blocks WHERE key = $1`
 }
 
-// returns datastore, and a function to call on exit.
-//
-//	d, close := newDS(t)
-//	defer close()
-func newDS(t *testing.T) (*Datastore, func()) {
+// newDS returns a datastore that is cleaned up and closed at end of test.
+func newDS(t *testing.T) *Datastore {
 	initPG()
 	// connect to that database.
 	fmtstr := "postgres://%s:%s@%s/%s?sslmode=disable"
@@ -113,10 +110,11 @@ func newDS(t *testing.T) (*Datastore, func()) {
 		t.Fatal(err)
 	}
 	d := NewDatastore(db, fakeQueries{})
-	return d, func() {
+	t.Cleanup(func() {
 		_, _ = d.db.Exec("DROP TABLE IF EXISTS blocks")
 		d.Close()
-	}
+	})
+	return d
 }
 
 func addTestCases(t *testing.T, d *Datastore, testcases map[string]string) {
@@ -141,8 +139,7 @@ func addTestCases(t *testing.T, d *Datastore, testcases map[string]string) {
 }
 
 func TestQuery(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 
 	addTestCases(t, d, testcases)
 	ctx := t.Context()
@@ -234,8 +231,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	addTestCases(t, d, testcases)
 	ctx := t.Context()
 
@@ -259,8 +255,7 @@ func TestHas(t *testing.T) {
 }
 
 func TestNotExistGet(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	addTestCases(t, d, testcases)
 	ctx := t.Context()
 
@@ -287,8 +282,7 @@ func TestNotExistGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	addTestCases(t, d, testcases)
 	ctx := t.Context()
 
@@ -315,8 +309,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestGetEmpty(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	ctx := t.Context()
 
 	err := d.Put(ctx, ds.NewKey("/a"), []byte{})
@@ -335,8 +328,7 @@ func TestGetEmpty(t *testing.T) {
 }
 
 func TestBatching(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	ctx := t.Context()
 
 	b, err := d.Batch(ctx)
@@ -405,8 +397,7 @@ func TestBatching(t *testing.T) {
 }
 
 func SubtestBasicPutGet(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	ctx := t.Context()
 
 	k := ds.NewKey("foo")
@@ -487,8 +478,7 @@ func SubtestBasicPutGet(t *testing.T) {
 }
 
 func TestNotFounds(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	ctx := t.Context()
 
 	badk := ds.NewKey("notreal")
@@ -523,8 +513,7 @@ func TestNotFounds(t *testing.T) {
 }
 
 func SubtestManyKeysAndQuery(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 
 	var keys []ds.Key
 	var keystrs []string
@@ -607,8 +596,7 @@ func SubtestManyKeysAndQuery(t *testing.T) {
 
 // Tests from basic_tests from go-datastore
 func TestBasicPutGet(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 	ctx := t.Context()
 
 	k := ds.NewKey("foo")
@@ -663,8 +651,7 @@ func TestBasicPutGet(t *testing.T) {
 }
 
 func TestManyKeysAndQuery(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
+	d := newDS(t)
 
 	var keys []ds.Key
 	var keystrs []string
@@ -748,9 +735,7 @@ func TestManyKeysAndQuery(t *testing.T) {
 }
 
 func TestSuite(t *testing.T) {
-	d, done := newDS(t)
-	defer done()
-
+	d := newDS(t)
 	dstest.SubtestAll(t, d)
 }
 
