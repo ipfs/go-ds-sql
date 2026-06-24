@@ -3,6 +3,7 @@ package sqlds
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	datastore "github.com/ipfs/go-datastore"
@@ -41,42 +42,42 @@ func (t *txn) Get(ctx context.Context, key datastore.Key) ([]byte, error) {
 	row := t.txn.QueryRowContext(ctx, t.queries.Get(), key.String())
 	var out []byte
 
-	switch err := row.Scan(&out); err {
-	case sql.ErrNoRows:
-		return nil, datastore.ErrNotFound
-	case nil:
-		return out, nil
-	default:
+	err := row.Scan(&out)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrNotFound
+		}
 		return nil, err
 	}
+	return out, nil
 }
 
 func (t *txn) Has(ctx context.Context, key datastore.Key) (bool, error) {
 	row := t.txn.QueryRowContext(ctx, t.queries.Exists(), key.String())
 	var exists bool
 
-	switch err := row.Scan(&exists); err {
-	case sql.ErrNoRows:
-		return exists, nil
-	case nil:
-		return exists, nil
-	default:
+	err := row.Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return exists, nil
+		}
 		return exists, err
 	}
+	return exists, nil
 }
 
 func (t *txn) GetSize(ctx context.Context, key datastore.Key) (int, error) {
 	row := t.txn.QueryRowContext(ctx, t.queries.GetSize(), key.String())
 	var size int
 
-	switch err := row.Scan(&size); err {
-	case sql.ErrNoRows:
-		return -1, datastore.ErrNotFound
-	case nil:
-		return size, nil
-	default:
+	err := row.Scan(&size)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, datastore.ErrNotFound
+		}
 		return 0, err
 	}
+	return size, nil
 }
 
 func (t *txn) Query(ctx context.Context, q dsq.Query) (dsq.Results, error) {
