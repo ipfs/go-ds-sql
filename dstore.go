@@ -3,6 +3,7 @@ package sqlds
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	ds "github.com/ipfs/go-datastore"
@@ -49,32 +50,33 @@ func (d *Datastore) Delete(ctx context.Context, key ds.Key) error {
 }
 
 // Get retrieves a value from the SQL database by the given key.
-func (d *Datastore) Get(ctx context.Context, key ds.Key) (value []byte, err error) {
+func (d *Datastore) Get(ctx context.Context, key ds.Key) ([]byte, error) {
 	row := d.db.QueryRowContext(ctx, d.queries.Get(), key.String())
 	var out []byte
 
-	switch err := row.Scan(&out); err {
-	case sql.ErrNoRows:
-		return nil, ds.ErrNotFound
-	case nil:
-		return out, nil
-	default:
+	err := row.Scan(&out)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ds.ErrNotFound
+		}
 		return nil, err
 	}
+	return out, nil
 }
 
 // Has determines if a value for the given key exists in the SQL database.
-func (d *Datastore) Has(ctx context.Context, key ds.Key) (exists bool, err error) {
+func (d *Datastore) Has(ctx context.Context, key ds.Key) (bool, error) {
 	row := d.db.QueryRowContext(ctx, d.queries.Exists(), key.String())
+	var exists bool
 
-	switch err := row.Scan(&exists); err {
-	case sql.ErrNoRows:
-		return exists, nil
-	case nil:
-		return exists, nil
-	default:
+	err := row.Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return exists, nil
+		}
 		return exists, err
 	}
+	return exists, nil
 }
 
 // Put "upserts" a row into the SQL database.
@@ -165,14 +167,14 @@ func (d *Datastore) GetSize(ctx context.Context, key ds.Key) (int, error) {
 	row := d.db.QueryRowContext(ctx, d.queries.GetSize(), key.String())
 	var size int
 
-	switch err := row.Scan(&size); err {
-	case sql.ErrNoRows:
-		return -1, ds.ErrNotFound
-	case nil:
-		return size, nil
-	default:
+	err := row.Scan(&size)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return -1, ds.ErrNotFound
+		}
 		return 0, err
 	}
+	return size, nil
 }
 
 // queryWithParams applies prefix, limit, and offset params in pg query
